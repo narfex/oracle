@@ -1,24 +1,35 @@
-# Uniswap V2
+# Narfex Pseudo Oracle
 
-[![Actions Status](https://github.com/Uniswap/uniswap-v2-periphery/workflows/CI/badge.svg)](https://github.com/Uniswap/uniswap-v2-periphery/actions)
-[![npm](https://img.shields.io/npm/v/@uniswap/v2-periphery?style=flat-square)](https://npmjs.com/package/@uniswap/v2-periphery)
-
-In-depth documentation on Uniswap V2 is available at [uniswap.org](https://uniswap.org/docs).
-
-The built contract artifacts can be browsed via [unpkg.com](https://unpkg.com/browse/@uniswap/v2-periphery@latest/).
-
-# Local Development
-
-The following assumes the use of `node@>=10`.
+An oracle that looks to Pancakeswap contracts for token prices instead of external sources.
+This cannot be called a real oracle, because the interaction takes place inside the blockchain.
 
 ## Install Dependencies
 
-`yarn`
+`npm i`
 
-## Compile Contracts
+## Compile
 
-`yarn compile`
+`npm run compile`
 
-## Run Tests
+## Prepare account before deploy
 
-`yarn test`
+Create a file names 'accounts.js' with the following contents
+to the one level above the project directory
+
+`
+module.exports = {
+	bsc: {
+		address: 'your_wallet_address',
+		privateKey: 'your_wallet_private_key'
+	},
+	bscscan: 'your_bscscan_api_key',
+};
+`
+
+## Deploy to BSC
+
+`npm run deployBSC`
+
+## Verify
+
+`npx hardhat verify --network bsc --constructor-args arguments.js "your_contract_address"`
