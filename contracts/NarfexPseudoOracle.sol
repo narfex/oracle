@@ -29,11 +29,13 @@ contract NarfexPseudoOracle {
         WrappedNative = _WrappedNative;
     }
 
+    // Returns pair address from PancakeFactory
     function getPair(address _token0, address _token1) public view returns (address pairAddress) {
         PancakeFactory factory = PancakeFactory(factoryAddress);
         return factory.getPair(_token0, _token1);
     }
 
+    // Returns ratio in a decimal number with 18 digits of precision
     function getRatio(address _token0, address _token1) public view returns (uint) {
         PancakePair pair = PancakePair(getPair(_token0, _token1));
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = pair.getReserves();
@@ -44,6 +46,7 @@ contract NarfexPseudoOracle {
         }
     }
 
+    // Returns token native price (in native coins of current network) in a decimal number with 18 digits of precision
     function getPrice(address _token) public view returns (uint) {
         if (_token == WrappedNative) {
             return WAD;
@@ -52,6 +55,7 @@ contract NarfexPseudoOracle {
         }
     }
 
+    // Returns token USD price in a decimal number with 18 digits of precision
     function getUSDPrice(address _token) public view returns (uint) {
         if (_token == USDT) {
             return WAD;
