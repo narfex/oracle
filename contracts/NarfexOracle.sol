@@ -14,9 +14,8 @@ abstract contract PancakePair {
 
 /**
   * An oracle that looks to Pancakeswap contracts for token prices instead of external sources.
-  * This cannot be called a real oracle, because the interaction takes place inside the blockchain.
   */
-contract NarfexPseudoOracle {
+contract NarfexOracle {
 
     address public factoryAddress; // PancakeFactory for pairs getting
     address public USDT; // Tether address in current network
