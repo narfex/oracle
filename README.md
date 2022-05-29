@@ -1,7 +1,6 @@
-# Narfex Pseudo Oracle
+# Narfex Oracle
 
 An oracle that looks to Pancakeswap contracts for token prices instead of external sources.
-This cannot be called a real oracle, because the interaction takes place inside the blockchain.
 
 ## Install Dependencies
 
