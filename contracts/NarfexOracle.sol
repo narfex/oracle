@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -20,7 +19,7 @@ abstract contract DEXPair {
 /// @author Danil Sakhinov
 /// @notice Fiat prices are regularly sent by the owner from the backend service
 /// @notice Added bulk data acquisition functions
-contract NarfexOracle is Context, Ownable {
+contract NarfexOracle is Ownable {
     using Address for address;
 
     struct Token {
