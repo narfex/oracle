@@ -17,28 +17,3 @@ and using PancakePair contract
 }
 ```
 
-## ***How we can get prices of tokens from pancakeswap***
-1. In this function we can get address of pair in PancakeFactory
-```solidity
-    function getPair(address _token0, address _token1) public view returns (address pairAddress)
-```
-    `returns` address of pair in pancakeswap
-
-
-2. Searching for price of _token0 in pair
-```solidity
-   function getRatio(address _token0, address _token1) public view returns (uint)
-```
-    `returns` price of `_token0` in wei
-
-3. Getting price of second token in pair (in this case USDT)
-```solidity
-   function getPrice(address _token) public view returns (uint)
-```
-    `returns` price of `USDT`
-
-4. Getting price of native token (BNB or WBNB in USDT).   
-```solidity
-   function getUSDPrice(address _token) public view returns (uint)
-```
-    `returns` price of `BNB` in USDT
