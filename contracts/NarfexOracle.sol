@@ -50,13 +50,13 @@ contract NarfexOracle is Ownable {
     }
 
     // Returns pair address from DEX Factory
-    function getPair(address _token0, address _token1) public view returns (address pairAddress) {
+    function getPair(address _token0, address _token1) internal view returns (address pairAddress) {
         DEXFactory factory = DEXFactory(dexFactoryAddress);
         return factory.getPair(_token0, _token1);
     }
 
     // Returns ratio in a decimal number with 18 digits of precision
-    function getPairRatio(address _token0, address _token1) public view returns (uint) {
+    function getPairRatio(address _token0, address _token1) internal view returns (uint) {
         DEXPair pair = DEXPair(getPair(_token0, _token1));
         (uint112 reserve0, uint112 reserve1,) = pair.getReserves();
         return pair.token0() == _token0
@@ -65,7 +65,7 @@ contract NarfexOracle is Ownable {
     }
 
     // Returns token USD price in a decimal number with 18 digits of precision
-    function getDEXPrice(address _address) public view returns (uint) {
+    function getDEXPrice(address _address) internal view returns (uint) {
         return _address == USDT
             ? DECIMALS
             : getPairRatio(_address, USDT);
