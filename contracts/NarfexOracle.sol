@@ -43,7 +43,7 @@ contract NarfexOracle is Ownable {
     address public updater; // Updater account. Has rights for update prices
     address public dexFactoryAddress; // DEX Factory for pairs getting
     address public USDT; // Tether address in current network
-    uint constant DECIMALS = 10 ** 18; // Decimal number with 18 digits of precision
+    uint constant PRECISION = 10 ** 18; // Decimal number with 18 digits of precision
 
     event SetUpdater(address updaterAddress);
 
@@ -69,14 +69,14 @@ contract NarfexOracle is Ownable {
         DEXPair pair = DEXPair(getPair(_token0, _token1));
         (uint112 reserve0, uint112 reserve1,) = pair.getReserves();
         return pair.token0() == _token0
-            ? reserve1 * DECIMALS / reserve0
-            : reserve0 * DECIMALS / reserve1;
+            ? reserve1 * PRECISION / reserve0
+            : reserve0 * PRECISION / reserve1;
     }
 
     // Returns token USD price in a decimal number with 18 digits of precision
     function getDEXPrice(address _address) internal view returns (uint) {
         return _address == USDT
-            ? DECIMALS
+            ? PRECISION
             : getPairRatio(_address, USDT);
     }
 
