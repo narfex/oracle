@@ -34,7 +34,7 @@ contract NarfexOracle is Ownable {
 
     address[] public fiats; // List of tracked fiat stablecoins
     address[] public coins; // List of crypto tokens with different commission
-    mapping (address => Token) tokens;
+    mapping (address => Token) public tokens;
 
     int defaultFiatCommission = 0; // Use as a commission if isCustomCommission = false for fiats
     int defaultCryptoCommission = 0; // Use as a commission if isCustomCommission = false for coins
@@ -124,7 +124,7 @@ contract NarfexOracle is Ownable {
 
     /// @notice Returns token commission
     /// @param _address Token address
-    /// @return Commission - multiplier with 18 digits of precision
+    /// @return Commission - multiplier with 1000 digits of precision
     function getCommission(address _address) public view returns (int) {
         Token storage token = tokens[_address];
         if (token.isCustomCommission) {
@@ -136,9 +136,16 @@ contract NarfexOracle is Ownable {
         }
     }
 
+    /// @notice Returns token transfer fee
+    /// @param _address Token address
+    /// @return Fee with 1000 digits of precision
+    function getTokenTransferFee(address _address) public view returns (uint) {
+        return tokens[_address].transferFee;
+    }
+
     /// @notice Returns fiat commission
     /// @param _address Token address
-    /// @return Commission - multiplier with 18 digits of precision
+    /// @return Commission - multiplier with 1000 digits of precision
     function getReferralPercent(address _address) public view returns (uint) {
         Token storage token = tokens[_address];
         if (token.isFiat) {
