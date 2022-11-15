@@ -28,7 +28,8 @@ contract NarfexOracle is Ownable {
         bool isCustomReward; // Use defalt referral percent on false
         uint price; // USD price only for fiats
         uint reward; // Referral percent only for fiats
-        int commission; // Commission percent. Can be lower than zero
+        int commission; // Commission percent with. Can be lower than zero
+        uint transferFee; // Token transfer fee with 1000 decimals precision (20 for NRFX is 2%)
     }
 
     address[] public fiats; // List of tracked fiat stablecoins
@@ -39,10 +40,18 @@ contract NarfexOracle is Ownable {
     int defaultCryptoCommission = 0; // Use as a commission if isCustomCommission = false for coins
     uint defaultReward = 0; // Use as a default referral percent if isCustomReward = false
 
+    address public updater; // Updater account. Has rights for update prices
     address public dexFactoryAddress; // DEX Factory for pairs getting
     address public USDT; // Tether address in current network
     uint constant DECIMALS = 10 ** 18; // Decimal number with 18 digits of precision
 
+    event SetUpdater(address updaterAddress);
+
+    /// @notice only factory owner and router have full access
+    modifier canUpdate {
+        require(_msgSender() == owner() || _msgSender() == updater, "You have no access");
+        _;
+    }
 
     constructor(address _factory, address _USDT) {
         dexFactoryAddress = _factory;
@@ -194,11 +203,18 @@ contract NarfexOracle is Ownable {
         );
     }
 
+    /// @notice Set updater account address
+    /// @param _updaterAddress Account address
+    function setUpdater(address _updaterAddress) public onlyOwner {
+        updater = _updaterAddress;
+        emit SetUpdater(_updaterAddress);
+    }
+
     /// @notice Update single fiat price
     /// @param _address Token address
     /// @param _price Fiat price - unsigned number with 18 digits of precision
     /// @dev Only owner can manage prices
-    function updatePrice(address _address, uint _price) public onlyOwner {
+    function updatePrice(address _address, uint _price) public canUpdate {
         Token storage token = tokens[_address];
         if (token.price != _price) {
             token.price = _price;
@@ -213,7 +229,7 @@ contract NarfexOracle is Ownable {
     /// @param _fiats Array of tokens addresses
     /// @param _prices Fiats prices array - unsigned numbers with 18 digits of precision
     /// @dev Only owner can manage prices
-    function updatePrices(address[] calldata _fiats, uint[] calldata _prices) public onlyOwner {
+    function updatePrices(address[] calldata _fiats, uint[] calldata _prices) public canUpdate {
         require (_fiats.length == _prices.length, "Data lengths do not match");
         for (uint i = 0; i < _fiats.length; i++) {
             updatePrice(_fiats[i], _prices[i]);
@@ -246,6 +262,14 @@ contract NarfexOracle is Ownable {
                 break;
             }
         }
+    }
+
+    /// @notice Set transfer fee percent for token
+    /// @param _address Token address
+    /// @param _fee Fee percent with 1000 decimals precision (20 = 2%)
+    function setTokenTransferFee(address _address, uint _fee) public onlyOwner {
+        Token storage token = tokens[_address];
+        token.transferFee = _fee;
     }
 
     /// @notice Update default commissions and reward values
