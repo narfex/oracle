@@ -1,19 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "./PancakeLibrary.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-abstract contract DEXFactory {
-    function getPair(address _token0, address _token1) external view virtual returns (address pairAddress);
-}
-
-abstract contract DEXPair {
-    address public token0;
-    address public token1;
-    function getReserves() public view virtual returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
-}
 
 /// @title Oracle contract for Narfex Fiats and storage of commissions
 /// @author Danil Sakhinov
@@ -32,6 +23,15 @@ contract NarfexOracle is Ownable {
         uint transferFee; // Token transfer fee with 1000 decimals precision (20 for NRFX is 2%)
     }
 
+    /// Calculated Token data
+    struct TokenData {
+        bool isFiat;
+        int commission;
+        uint price;
+        uint reward;
+        uint transferFee;
+    }
+
     address[] public fiats; // List of tracked fiat stablecoins
     address[] public coins; // List of crypto tokens with different commission
     mapping (address => Token) public tokens;
@@ -41,7 +41,6 @@ contract NarfexOracle is Ownable {
     uint defaultReward = 0; // Use as a default referral percent if isCustomReward = false
 
     address public updater; // Updater account. Has rights for update prices
-    address public dexFactoryAddress; // DEX Factory for pairs getting
     address public USDT; // Tether address in current network
     uint constant PRECISION = 10 ** 18; // Decimal number with 18 digits of precision
 
@@ -53,20 +52,13 @@ contract NarfexOracle is Ownable {
         _;
     }
 
-    constructor(address _factory, address _USDT) {
-        dexFactoryAddress = _factory;
+    constructor(address _USDT) {
         USDT = _USDT;
-    }
-
-    // Returns pair address from DEX Factory
-    function getPair(address _token0, address _token1) internal view returns (address pairAddress) {
-        DEXFactory factory = DEXFactory(dexFactoryAddress);
-        return factory.getPair(_token0, _token1);
     }
 
     // Returns ratio in a decimal number with 18 digits of precision
     function getPairRatio(address _token0, address _token1) internal view returns (uint) {
-        DEXPair pair = DEXPair(getPair(_token0, _token1));
+        IPancakePair pair = IPancakePair(PancakeLibrary.pairFor(_token0, _token1));
         (uint112 reserve0, uint112 reserve1,) = pair.getReserves();
         return pair.token0() == _token0
             ? reserve1 * PRECISION / reserve0
@@ -208,6 +200,36 @@ contract NarfexOracle is Ownable {
             defaultReward,
             responseTokens
         );
+    }
+
+    /// @notice Returns calculated Token data
+    /// @param _address Token address
+    /// @param _skipCoinPrice Allow to skip external calls for non-fiats
+    /// @return tokenData Struct
+    function getTokenData(address _address, bool _skipCoinPrice)
+        public view returns (TokenData memory tokenData)
+    {
+        tokenData.isFiat = getIsFiat(_address);
+        tokenData.commission = getCommission(_address);
+        tokenData.price = !tokenData.isFiat && _skipCoinPrice
+            ? 0
+            : getPrice(_address);
+        tokenData.reward = getReferralPercent(_address);
+        tokenData.transferFee = getTokenTransferFee(_address);
+    }
+
+    /// @notice Returns calculates Token data for many tokens
+    /// @param _tokens Array of addresses
+    /// @param _skipCoinPrice Allow to skip external calls for non-fiats
+    /// @return Array of TokenData structs
+    function getTokensData(address[] calldata _tokens, bool _skipCoinPrice)
+        public view returns (TokenData[] memory)
+    {
+        TokenData[] memory response = new TokenData[](_tokens.length);
+        for (uint i; i < _tokens.length; i++) {
+            response[i] = getTokenData(_tokens[i], _skipCoinPrice);
+        }
+        return response;
     }
 
     /// @notice Set updater account address
