@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "./PancakeLibrary.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -43,6 +43,7 @@ contract NarfexOracle is Ownable {
     address public updater; // Updater account. Has rights for update prices
     address public USDT; // Tether address in current network
     uint constant PRECISION = 10 ** 18; // Decimal number with 18 digits of precision
+    uint private USDT_PRECISION = 10**6;
 
     event SetUpdater(address updaterAddress);
 
@@ -54,6 +55,9 @@ contract NarfexOracle is Ownable {
 
     constructor(address _USDT) {
         USDT = _USDT;
+        if (block.chainid == 56 || block.chainid == 97) {
+            USDT_PRECISION = 10**18;
+        }
     }
 
     // Returns ratio in a decimal number with 18 digits of precision
@@ -68,7 +72,7 @@ contract NarfexOracle is Ownable {
     // Returns token USD price in a decimal number with 18 digits of precision
     function getDEXPrice(address _address) internal view returns (uint) {
         return _address == USDT
-            ? PRECISION
+            ? USDT_PRECISION
             : getPairRatio(_address, USDT);
     }
 
