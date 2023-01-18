@@ -4,7 +4,11 @@ pragma solidity ^0.8.17;
 import "./PancakeLibrary.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+interface IERC20 {
+    function decimals() external view returns (uint8);
+    function balanceOf(address account) external view returns (uint256);
+}
 
 /// @title Oracle contract for Narfex Fiats and storage of commissions
 /// @author Danil Sakhinov
@@ -42,8 +46,6 @@ contract NarfexOracle is Ownable {
 
     address public updater; // Updater account. Has rights for update prices
     address public USDT; // Tether address in current network
-    uint constant PRECISION = 10 ** 18; // Decimal number with 18 digits of precision
-    uint private USDT_PRECISION = 10**6;
 
     event SetUpdater(address updaterAddress);
 
@@ -55,30 +57,28 @@ contract NarfexOracle is Ownable {
 
     constructor(address _USDT) {
         USDT = _USDT;
-        if (block.chainid == 56 || block.chainid == 97) {
-            USDT_PRECISION = 10**18;
-        }
     }
 
-    // Returns ratio in a decimal number with 18 digits of precision
+    // Returns ratio
     function getPairRatio(address _token0, address _token1) internal view returns (uint) {
         IPancakePair pair = IPancakePair(PancakeLibrary.pairFor(_token0, _token1));
         (uint112 reserve0, uint112 reserve1,) = pair.getReserves();
+        
         return pair.token0() == _token0
-            ? reserve1 * PRECISION / reserve0
-            : reserve0 * PRECISION / reserve1;
+            ? PancakeLibrary.getAmountOut(10**IERC20(_token0).decimals(), reserve0, reserve1)
+            : PancakeLibrary.getAmountOut(10**IERC20(_token1).decimals(), reserve1, reserve0);
     }
 
-    // Returns token USD price in a decimal number with 18 digits of precision
+    // Returns token USD price
     function getDEXPrice(address _address) internal view returns (uint) {
         return _address == USDT
-            ? USDT_PRECISION
+            ? 10**IERC20(USDT).decimals()
             : getPairRatio(_address, USDT);
     }
 
     /// @notice Returns token USD price for fiats and coins both
     /// @param _address Token address
-    /// @return USD price with 18 digits of precision
+    /// @return USD price
     function getPrice(address _address) public view returns (uint) {
         Token storage token = tokens[_address];
         return token.isFiat
