@@ -21,7 +21,13 @@ const networks = {
     polygon: {
         url: "https://polygon-rpc.com",
         chainId: 137,
-        gasPrice: 53000000000,
+        gasPrice: 140000000000,
+        accounts: [accounts.bsc.privateKey]
+    },
+    arbitrum: {
+        url: "https://arb1.arbitrum.io/rpc",
+        chainId: 42161,
+        gasPrice: 200000000,
         accounts: [accounts.bsc.privateKey]
     },
     mumbai: {
@@ -50,6 +56,6 @@ module.exports = {
     },
     networks: networks,
     etherscan: {
-        apiKey: accounts.ether
+        apiKey: accounts.arbitrum
     }
 };

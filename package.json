@@ -27,7 +27,9 @@
     "deployLocal": "npx hardhat run scripts/deploy.jsx --network localhost",
     "deployBSC": "npx hardhat run scripts/deploy.jsx --network bsc",
     "deployTest": "npx hardhat run scripts/deployTest.jsx --network test",
-    "deployETH": "npx hardhat run scripts/deployETH.jsx --network eth"
+    "deployETH": "npx hardhat run scripts/deployETH.jsx --network eth",
+    "deployPolygon": "npx hardhat run scripts/deployPolygon.jsx --network polygon",
+    "deployArbitrum": "npx hardhat run scripts/deployArbitrum.jsx --network arbitrum"
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
