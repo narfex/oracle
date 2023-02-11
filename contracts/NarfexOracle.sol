@@ -1,12 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./PancakeLibrary.sol";
+import "./PancakeLibrary.sol";  //xx CRITICAL cannot compile the code since there is no such file in the repo
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-interface IERC20 {
-    function decimals() external view returns (uint8);
+interface IERC20 {  //xx LOW use import IERC20Metadata from OpenZeppelin
+    function decimals() external view returns (uint8);  //xx WARNING not all erc20 tokens have it
     function balanceOf(address account) external view returns (uint256);
 }
 
@@ -20,11 +20,11 @@ contract NarfexOracle is Ownable {
     struct Token {
         bool isFiat;
         bool isCustomCommission; // Use default commission on false
-        bool isCustomReward; // Use defalt referral percent on false
+        bool isCustomReward; // Use defalt referral percent on false  //xx LOW typo in the word "default"
         uint price; // USD price only for fiats
-        uint reward; // Referral percent only for fiats
+        uint reward; // Referral percent only for fiats  //xx LOW where is it used?  //xx LOW 25-27 add postfix Numerator for clarity
         int commission; // Commission percent with. Can be lower than zero
-        uint transferFee; // Token transfer fee with 1000 decimals precision (20 for NRFX is 2%)
+        uint transferFee; // Token transfer fee with 1000 decimals precision (20 for NRFX is 2%)  //xx LOW 25-27 should it be part of the oracle? Maybe split it to another contract keeping the oracle as simply as possible and logically isolated.
     }
 
     /// Calculated Token data
@@ -36,18 +36,18 @@ contract NarfexOracle is Ownable {
         uint transferFee;
     }
 
-    address[] public fiats; // List of tracked fiat stablecoins
-    address[] public coins; // List of crypto tokens with different commission
+    address[] public fiats; // List of tracked fiat stablecoins  //xx LOW 39-40 OpenZeppelin enumerableSet
+    address[] public coins; // List of crypto tokens with different commission  //xx LOW rename to tokensWithCustomCommission
     mapping (address => Token) public tokens;
 
     int defaultFiatCommission = 0; // Use as a commission if isCustomCommission = false for fiats
-    int defaultCryptoCommission = 0; // Use as a commission if isCustomCommission = false for coins
+    int defaultCryptoCommission = 0; // Use as a commission if isCustomCommission = false for coins  //xx LOW wrong terminology https://www.bitstamp.net/learn/crypto-101/crypto-coins-vs-tokens/
     uint defaultReward = 0; // Use as a default referral percent if isCustomReward = false
 
-    address public updater; // Updater account. Has rights for update prices
-    address public USDT; // Tether address in current network
+    address public updater; // Updater account. Has rights for update prices  //xx LOW rephrase "to update"
+    address public USDT; // Tether address in current network  //xx LOW "the current"  //xx LOW declare immutable  //xx WARNING it's here "Tether USDT", however on the call you told that we are gonna use "USDC", should we rename?
 
-    event SetUpdater(address updaterAddress);
+    event SetUpdater(address updaterAddress);  //xx LOW add events emitted on important settings set
 
     /// @notice only factory owner and router have full access
     modifier canUpdate {
@@ -59,12 +59,12 @@ contract NarfexOracle is Ownable {
         USDT = _USDT;
     }
 
-    // Returns ratio
-    function getPairRatio(address _token0, address _token1) internal view returns (uint) {
+    // Returns ratio  //xx LOW 62,72 use NatSpec
+    function getPairRatio(address _token0, address _token1) internal view returns (uint) {  //xx CRITICAL weak for price manipulations, consider the usage of uniswap v2 cumulative price oracle - https://docs.uniswap.org/contracts/v2/concepts/core-concepts/oracles
         IPancakePair pair = IPancakePair(PancakeLibrary.pairFor(_token0, _token1));
         (uint112 reserve0, uint112 reserve1,) = pair.getReserves();
         
-        return pair.token0() == _token0
+        return pair.token0() == _token0  //xx MAJOR pancakeLibrary gives the price with fee, consider just using division of reserves
             ? PancakeLibrary.getAmountOut(10**IERC20(_token0).decimals(), reserve0, reserve1)
             : PancakeLibrary.getAmountOut(10**IERC20(_token1).decimals(), reserve1, reserve0);
     }
@@ -73,7 +73,7 @@ contract NarfexOracle is Ownable {
     function getDEXPrice(address _address) internal view returns (uint) {
         return _address == USDT
             ? 10**IERC20(USDT).decimals()
-            : getPairRatio(_address, USDT);
+            : getPairRatio(_address, USDT);  //xx MAJOR not every token has a pair for Token-USDT, a lot of tokens have only Token-ETH pair. What should we do in this case? Should we take the price using the route Token-BNB BNB-USDT?
     }
 
     /// @notice Returns token USD price for fiats and coins both
@@ -83,7 +83,7 @@ contract NarfexOracle is Ownable {
         Token storage token = tokens[_address];
         return token.isFiat
             ? token.price
-            : getDEXPrice(_address);
+            : getDEXPrice(_address);  //xx CRITICAL if backend goes offline, the oracle will give old prices. Consider returning the timestamp (or blocknumber) of the last price update, so the consumer will be able to understand if the prices are out-dated.
     }
 
     /// @notice Returns token USD price for many tokens
@@ -92,7 +92,7 @@ contract NarfexOracle is Ownable {
     function getPrices(address[] calldata _tokens) public view returns (uint[] memory) {
         uint length = _tokens.length;
         uint[] memory response = new uint[](length);
-        for (uint i = 0; i < length; i++) {
+        for (uint i = 0; i < length; i++) {  //xx LOW 95,108,174-179 use unchecked declaration to disable embedded safemath for i++
             response[i] = getPrice(_tokens[i]);
         }
         return response;
@@ -156,7 +156,7 @@ contract NarfexOracle is Ownable {
     /// @notice Returns array of Narfex Fiats addresses
     /// @return Array of fiats addresses
     function getFiats() public view returns (address[] memory) {
-        return fiats;
+        return fiats;  //xx LOW 157-160,164-166 fiats are declared as a public variable with default getter function. This is duplication. Consider removal.
     }
 
     /// @notice Returns array of Coins addresses with different commissions
@@ -185,7 +185,7 @@ contract NarfexOracle is Ownable {
     /// @return Default coin commission
     /// @return Default referral reward percent
     /// @return Array of Token structs
-    function getSettings() public view returns (
+    function getSettings() public view returns (  //xx LOW why do you need this function at all?
         int,
         int,
         uint,
@@ -194,7 +194,7 @@ contract NarfexOracle is Ownable {
         address[] memory allTokens = getAllTokens();
         uint length = allTokens.length;
         Token[] memory responseTokens = new Token[](length);
-        for (uint i; i < length; i++) {
+        for (uint i; i < length; i++) {  //xx LOW prevent the warning from slither, use "uint i = 0;:
             responseTokens[i] = tokens[allTokens[i]];
         }
 
@@ -215,7 +215,7 @@ contract NarfexOracle is Ownable {
     {
         tokenData.isFiat = getIsFiat(_address);
         tokenData.commission = getCommission(_address);
-        tokenData.price = !tokenData.isFiat && _skipCoinPrice
+        tokenData.price = !tokenData.isFiat && _skipCoinPrice  //xx WARNING why do you have it for "!tokenData.isFiat"?
             ? 0
             : getPrice(_address);
         tokenData.reward = getReferralPercent(_address);
@@ -230,7 +230,7 @@ contract NarfexOracle is Ownable {
         public view returns (TokenData[] memory)
     {
         TokenData[] memory response = new TokenData[](_tokens.length);
-        for (uint i; i < _tokens.length; i++) {
+        for (uint i; i < _tokens.length; i++) {  //xx LOW prevent the warning from slither, use "uint i = 0;:
             response[i] = getTokenData(_tokens[i], _skipCoinPrice);
         }
         return response;
@@ -245,15 +245,15 @@ contract NarfexOracle is Ownable {
 
     /// @notice Update single fiat price
     /// @param _address Token address
-    /// @param _price Fiat price - unsigned number with 18 digits of precision
+    /// @param _price Fiat price - unsigned number with 18 digits of precision  //xx MAJOR 91,248,263 why you say 18 decimals? USDT.decimals()==6, USDC.decimals()==6, for them the price will be PancakeLibrary.getAmountOut(10**IERC20(_token0).decimals(), reserve0, reserve1)==10**6
     /// @dev Only owner can manage prices
-    function updatePrice(address _address, uint _price) public canUpdate {
+    function updatePrice(address _address, uint _price) public canUpdate {  //xx MAJOR centralization power risk. Hacker will get the full control over the oracle if he will be in control of one backend server with a private key. Consider the usage of "voting" by several oracle nodes. Committing prices with signatures.
         Token storage token = tokens[_address];
         if (token.price != _price) {
-            token.price = _price;
+            token.price = _price;  //xx LOW emit event?
         }
         if (!token.isFiat) {
-            token.isFiat = true;
+            token.isFiat = true;  //xx LOW instead, it's safer to require(token.isFiat);
             fiats.push(_address);
         }
     }
@@ -273,16 +273,16 @@ contract NarfexOracle is Ownable {
     /// @param _address Token address
     /// @dev Only owner can use it
     /// @dev Necessary for rare cases, if for some reason the token got into the fiats list
-    function removeTokenFromFiats(address _address) public onlyOwner {
+    function removeTokenFromFiats(address _address) public onlyOwner {  //xx LOW use openzeppelin EnumerableSet
         Token storage token = tokens[_address];
         require (token.isFiat, "Token is not fiat");
         token.isFiat = false;
         for (uint i = 0; i < fiats.length; i++) {
             if (_address == fiats[i]) {
-                delete fiats[i];
+                delete fiats[i];  //xx MAJOR you have gaps in array, replace with the last one and use ".pop()"
                 break;
             }
-        }
+        }  //xx WARNING should it update the price?
     }
 
     /// @notice Remove the token from the coins list
@@ -310,11 +310,11 @@ contract NarfexOracle is Ownable {
     /// @param _cryptoCommission Default coin commission
     /// @param _reward Default referral reward percent
     /// @dev Only owner can use it
-    function updateDefaultSettings(
+    function updateDefaultSettings(  //xx LOW 313-399 it looks like it should not be part of the oracle
         int _fiatCommission,
         int _cryptoCommission,
         uint _reward
-        ) public onlyOwner {
+        ) public onlyOwner {  //xx LOW emit event
         defaultFiatCommission = _fiatCommission;
         defaultCryptoCommission = _cryptoCommission;
         defaultReward = _reward;
